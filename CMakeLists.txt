@@ -4,12 +4,13 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-project(qc66c VERSION 0.5.0 LANGUAGES C CXX)
+project(qc66c VERSION 0.6.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
@@ -30,7 +31,14 @@ qt_add_executable(qc66c
     src/PreferencesDialog.h
     src/SerialPort.cpp
     src/SerialPort.h
+    resources/qc66c.qrc
 )
+
+if(WIN32)
+    enable_language(RC)
+    target_sources(qc66c PRIVATE resources/qc66c.rc)
+    target_include_directories(qc66c PRIVATE resources)
+endif()
 
 set_target_properties(qc66c PROPERTIES
     WIN32_EXECUTABLE TRUE

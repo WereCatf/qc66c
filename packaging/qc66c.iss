@@ -29,6 +29,9 @@ WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
+SetupIconFile=..\resources\icons\qc66c.ico
+WizardImageFile=..\resources\icons\inno_large.png
+WizardSmallImageFile=..\resources\icons\inno_small.png
 PrivilegesRequired=admin
 
 [Tasks]

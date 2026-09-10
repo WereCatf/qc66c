@@ -1,0 +1,13 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/icons">
+        <file>icons/qc66c_16.png</file>
+        <file>icons/qc66c_24.png</file>
+        <file>icons/qc66c_32.png</file>
+        <file>icons/qc66c_48.png</file>
+        <file>icons/qc66c_64.png</file>
+        <file>icons/qc66c_128.png</file>
+        <file>icons/qc66c_256.png</file>
+        <file>icons/qc66c.ico</file>
+    </qresource>
+</RCC>
