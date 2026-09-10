@@ -40,13 +40,14 @@ struct MeasurementVisibility
     static MeasurementVisibility defaults();
 };
 
-struct AppearanceSettings
+struct AppSettings
 {
+    bool autoConnect = false;
     MeasurementColors colors;
     MeasurementVisibility visibility;
     QFont font;
 
-    static AppearanceSettings defaults();
+    static AppSettings defaults();
 };
 
 class PreferencesDialog : public QDialog
@@ -54,11 +55,12 @@ class PreferencesDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit PreferencesDialog(const AppearanceSettings &settings, QWidget *parent = nullptr);
+    explicit PreferencesDialog(const AppSettings &settings, QWidget *parent = nullptr);
 
-    AppearanceSettings settings() const;
+    AppSettings settings() const;
 
 private:
+    QWidget *buildGeneralTab();
     QWidget *buildMeasurementsTab();
     QWidget *buildFontTab();
     QWidget *buildColoursTab();
@@ -69,7 +71,9 @@ private:
     void updateFontPreview();
     void restoreDefaults();
 
-    AppearanceSettings m_settings;
+    AppSettings m_settings;
+
+    QCheckBox *m_autoConnectCheck = nullptr;
 
     QCheckBox *m_voltageCheck = nullptr;
     QCheckBox *m_currentCheck = nullptr;

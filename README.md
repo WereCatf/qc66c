@@ -20,6 +20,8 @@ Author: Nita Vesa
   runs.
 - Lets each measurement be shown or hidden, and the measurement font (family,
   size and bold) chosen, from the same Preferences dialog.
+- Can connect automatically on start-up when the TC66 port is present, and
+  remembers the window position and size between runs.
 
 ## Protocol
 
@@ -82,6 +84,7 @@ C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe .\build\Qc66c.exe
 3. Pick a different port if needed and click **Connect**.
 4. Live values update several times per second. Click **Disconnect** to stop.
 5. Open **Edit > Preferences...** to configure:
+   - **General** — connect automatically on start-up when the TC66 port is available.
    - **Measurements** — tick the values to display.
    - **Font** — family, size and bold for the measurement values.
    - **Colours** — colours for the voltage, current, power and resistance values.

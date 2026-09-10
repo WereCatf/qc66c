@@ -4,6 +4,7 @@
 #include "MainWindow.h"
 
 #include <QAction>
+#include <QCloseEvent>
 #include <QComboBox>
 #include <QFont>
 #include <QFormLayout>
@@ -16,6 +17,7 @@
 #include <QPushButton>
 #include <QSettings>
 #include <QStatusBar>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "SerialPort.h"
@@ -79,9 +81,24 @@ MainWindow::MainWindow(QWidget *parent)
     loadSettings();
     applyAppearance();
     refreshPorts();
+
+    if (m_settings.autoConnect) {
+        QTimer::singleShot(0, this, [this] {
+            const QString port = SerialPort::findTc66Port();
+            if (!port.isEmpty())
+                m_device->open(port);
+        });
+    }
 }
 
 MainWindow::~MainWindow() = default;
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    QSettings settings;
+    settings.setValue(QStringLiteral("window/geometry"), saveGeometry());
+    QMainWindow::closeEvent(event);
+}
 
 QWidget *MainWindow::buildConnectionGroup()
 {
@@ -245,54 +262,64 @@ void MainWindow::onError(const QString &message)
 void MainWindow::loadSettings()
 {
     QSettings settings;
-    const AppearanceSettings defaults = AppearanceSettings::defaults();
+    const AppSettings defaults = AppSettings::defaults();
 
-    m_appearance.colors.voltage = settings.value(QStringLiteral("colors/voltage"), defaults.colors.voltage).value<QColor>();
-    m_appearance.colors.current = settings.value(QStringLiteral("colors/current"), defaults.colors.current).value<QColor>();
-    m_appearance.colors.power = settings.value(QStringLiteral("colors/power"), defaults.colors.power).value<QColor>();
-    m_appearance.colors.resistance = settings.value(QStringLiteral("colors/resistance"), defaults.colors.resistance).value<QColor>();
+    m_settings.colors.voltage = settings.value(QStringLiteral("colors/voltage"), defaults.colors.voltage).value<QColor>();
+    m_settings.colors.current = settings.value(QStringLiteral("colors/current"), defaults.colors.current).value<QColor>();
+    m_settings.colors.power = settings.value(QStringLiteral("colors/power"), defaults.colors.power).value<QColor>();
+    m_settings.colors.resistance = settings.value(QStringLiteral("colors/resistance"), defaults.colors.resistance).value<QColor>();
 
-    m_appearance.visibility.voltage = settings.value(QStringLiteral("measurements/voltage"), defaults.visibility.voltage).toBool();
-    m_appearance.visibility.current = settings.value(QStringLiteral("measurements/current"), defaults.visibility.current).toBool();
-    m_appearance.visibility.power = settings.value(QStringLiteral("measurements/power"), defaults.visibility.power).toBool();
-    m_appearance.visibility.resistance = settings.value(QStringLiteral("measurements/resistance"), defaults.visibility.resistance).toBool();
-    m_appearance.visibility.capacity0 = settings.value(QStringLiteral("measurements/capacity0"), defaults.visibility.capacity0).toBool();
-    m_appearance.visibility.energy0 = settings.value(QStringLiteral("measurements/energy0"), defaults.visibility.energy0).toBool();
-    m_appearance.visibility.capacity1 = settings.value(QStringLiteral("measurements/capacity1"), defaults.visibility.capacity1).toBool();
-    m_appearance.visibility.energy1 = settings.value(QStringLiteral("measurements/energy1"), defaults.visibility.energy1).toBool();
-    m_appearance.visibility.temperature = settings.value(QStringLiteral("measurements/temperature"), defaults.visibility.temperature).toBool();
-    m_appearance.visibility.dPlus = settings.value(QStringLiteral("measurements/dPlus"), defaults.visibility.dPlus).toBool();
-    m_appearance.visibility.dMinus = settings.value(QStringLiteral("measurements/dMinus"), defaults.visibility.dMinus).toBool();
+    m_settings.visibility.voltage = settings.value(QStringLiteral("measurements/voltage"), defaults.visibility.voltage).toBool();
+    m_settings.visibility.current = settings.value(QStringLiteral("measurements/current"), defaults.visibility.current).toBool();
+    m_settings.visibility.power = settings.value(QStringLiteral("measurements/power"), defaults.visibility.power).toBool();
+    m_settings.visibility.resistance = settings.value(QStringLiteral("measurements/resistance"), defaults.visibility.resistance).toBool();
+    m_settings.visibility.capacity0 = settings.value(QStringLiteral("measurements/capacity0"), defaults.visibility.capacity0).toBool();
+    m_settings.visibility.energy0 = settings.value(QStringLiteral("measurements/energy0"), defaults.visibility.energy0).toBool();
+    m_settings.visibility.capacity1 = settings.value(QStringLiteral("measurements/capacity1"), defaults.visibility.capacity1).toBool();
+    m_settings.visibility.energy1 = settings.value(QStringLiteral("measurements/energy1"), defaults.visibility.energy1).toBool();
+    m_settings.visibility.temperature = settings.value(QStringLiteral("measurements/temperature"), defaults.visibility.temperature).toBool();
+    m_settings.visibility.dPlus = settings.value(QStringLiteral("measurements/dPlus"), defaults.visibility.dPlus).toBool();
+    m_settings.visibility.dMinus = settings.value(QStringLiteral("measurements/dMinus"), defaults.visibility.dMinus).toBool();
 
-    m_appearance.font.setFamily(settings.value(QStringLiteral("font/family"), defaults.font.family()).toString());
-    m_appearance.font.setPointSize(settings.value(QStringLiteral("font/size"), defaults.font.pointSize()).toInt());
-    m_appearance.font.setBold(settings.value(QStringLiteral("font/bold"), defaults.font.bold()).toBool());
+    m_settings.font.setFamily(settings.value(QStringLiteral("font/family"), defaults.font.family()).toString());
+    m_settings.font.setPointSize(settings.value(QStringLiteral("font/size"), defaults.font.pointSize()).toInt());
+    m_settings.font.setBold(settings.value(QStringLiteral("font/bold"), defaults.font.bold()).toBool());
+
+    m_settings.autoConnect = settings.value(QStringLiteral("general/autoConnect"), defaults.autoConnect).toBool();
+
+    const QByteArray geometry = settings.value(QStringLiteral("window/geometry")).toByteArray();
+    if (geometry.isEmpty())
+        resize(520, 640);
+    else
+        restoreGeometry(geometry);
 }
 
 void MainWindow::saveSettings()
 {
     QSettings settings;
 
-    settings.setValue(QStringLiteral("colors/voltage"), m_appearance.colors.voltage);
-    settings.setValue(QStringLiteral("colors/current"), m_appearance.colors.current);
-    settings.setValue(QStringLiteral("colors/power"), m_appearance.colors.power);
-    settings.setValue(QStringLiteral("colors/resistance"), m_appearance.colors.resistance);
+    settings.setValue(QStringLiteral("colors/voltage"), m_settings.colors.voltage);
+    settings.setValue(QStringLiteral("colors/current"), m_settings.colors.current);
+    settings.setValue(QStringLiteral("colors/power"), m_settings.colors.power);
+    settings.setValue(QStringLiteral("colors/resistance"), m_settings.colors.resistance);
 
-    settings.setValue(QStringLiteral("measurements/voltage"), m_appearance.visibility.voltage);
-    settings.setValue(QStringLiteral("measurements/current"), m_appearance.visibility.current);
-    settings.setValue(QStringLiteral("measurements/power"), m_appearance.visibility.power);
-    settings.setValue(QStringLiteral("measurements/resistance"), m_appearance.visibility.resistance);
-    settings.setValue(QStringLiteral("measurements/capacity0"), m_appearance.visibility.capacity0);
-    settings.setValue(QStringLiteral("measurements/energy0"), m_appearance.visibility.energy0);
-    settings.setValue(QStringLiteral("measurements/capacity1"), m_appearance.visibility.capacity1);
-    settings.setValue(QStringLiteral("measurements/energy1"), m_appearance.visibility.energy1);
-    settings.setValue(QStringLiteral("measurements/temperature"), m_appearance.visibility.temperature);
-    settings.setValue(QStringLiteral("measurements/dPlus"), m_appearance.visibility.dPlus);
-    settings.setValue(QStringLiteral("measurements/dMinus"), m_appearance.visibility.dMinus);
+    settings.setValue(QStringLiteral("measurements/voltage"), m_settings.visibility.voltage);
+    settings.setValue(QStringLiteral("measurements/current"), m_settings.visibility.current);
+    settings.setValue(QStringLiteral("measurements/power"), m_settings.visibility.power);
+    settings.setValue(QStringLiteral("measurements/resistance"), m_settings.visibility.resistance);
+    settings.setValue(QStringLiteral("measurements/capacity0"), m_settings.visibility.capacity0);
+    settings.setValue(QStringLiteral("measurements/energy0"), m_settings.visibility.energy0);
+    settings.setValue(QStringLiteral("measurements/capacity1"), m_settings.visibility.capacity1);
+    settings.setValue(QStringLiteral("measurements/energy1"), m_settings.visibility.energy1);
+    settings.setValue(QStringLiteral("measurements/temperature"), m_settings.visibility.temperature);
+    settings.setValue(QStringLiteral("measurements/dPlus"), m_settings.visibility.dPlus);
+    settings.setValue(QStringLiteral("measurements/dMinus"), m_settings.visibility.dMinus);
 
-    settings.setValue(QStringLiteral("font/family"), m_appearance.font.family());
-    settings.setValue(QStringLiteral("font/size"), m_appearance.font.pointSize());
-    settings.setValue(QStringLiteral("font/bold"), m_appearance.font.bold());
+    settings.setValue(QStringLiteral("font/family"), m_settings.font.family());
+    settings.setValue(QStringLiteral("font/size"), m_settings.font.pointSize());
+    settings.setValue(QStringLiteral("font/bold"), m_settings.font.bold());
+
+    settings.setValue(QStringLiteral("general/autoConnect"), m_settings.autoConnect);
 }
 
 void MainWindow::applyAppearance()
@@ -303,14 +330,14 @@ void MainWindow::applyAppearance()
         m_temperatureValue, m_dplusValue, m_dminusValue,
     };
     for (QLabel *label : valueLabels)
-        label->setFont(m_appearance.font);
+        label->setFont(m_settings.font);
 
-    m_voltageValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_appearance.colors.voltage.name()));
-    m_currentValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_appearance.colors.current.name()));
-    m_powerValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_appearance.colors.power.name()));
-    m_resistanceValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_appearance.colors.resistance.name()));
+    m_voltageValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_settings.colors.voltage.name()));
+    m_currentValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_settings.colors.current.name()));
+    m_powerValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_settings.colors.power.name()));
+    m_resistanceValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_settings.colors.resistance.name()));
 
-    const MeasurementVisibility &visible = m_appearance.visibility;
+    const MeasurementVisibility &visible = m_settings.visibility;
     m_readingsForm->setRowVisible(m_voltageValue, visible.voltage);
     m_readingsForm->setRowVisible(m_currentValue, visible.current);
     m_readingsForm->setRowVisible(m_powerValue, visible.power);
@@ -326,9 +353,9 @@ void MainWindow::applyAppearance()
 
 void MainWindow::openPreferences()
 {
-    PreferencesDialog dialog(m_appearance, this);
+    PreferencesDialog dialog(m_settings, this);
     if (dialog.exec() == QDialog::Accepted) {
-        m_appearance = dialog.settings();
+        m_settings = dialog.settings();
         applyAppearance();
         saveSettings();
     }

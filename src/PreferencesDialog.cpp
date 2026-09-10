@@ -31,9 +31,10 @@ MeasurementVisibility MeasurementVisibility::defaults()
     return MeasurementVisibility();
 }
 
-AppearanceSettings AppearanceSettings::defaults()
+AppSettings AppSettings::defaults()
 {
-    AppearanceSettings settings;
+    AppSettings settings;
+    settings.autoConnect = false;
     settings.colors = MeasurementColors::defaults();
     settings.visibility = MeasurementVisibility::defaults();
 
@@ -49,13 +50,14 @@ AppearanceSettings AppearanceSettings::defaults()
     return settings;
 }
 
-PreferencesDialog::PreferencesDialog(const AppearanceSettings &settings, QWidget *parent)
+PreferencesDialog::PreferencesDialog(const AppSettings &settings, QWidget *parent)
     : QDialog(parent)
     , m_settings(settings)
 {
     setWindowTitle(QStringLiteral("Preferences"));
 
     auto *tabs = new QTabWidget(this);
+    tabs->addTab(buildGeneralTab(), QStringLiteral("General"));
     tabs->addTab(buildMeasurementsTab(), QStringLiteral("Measurements"));
     tabs->addTab(buildFontTab(), QStringLiteral("Font"));
     tabs->addTab(buildColoursTab(), QStringLiteral("Colours"));
@@ -70,6 +72,21 @@ PreferencesDialog::PreferencesDialog(const AppearanceSettings &settings, QWidget
     auto *layout = new QVBoxLayout(this);
     layout->addWidget(tabs);
     layout->addWidget(buttons);
+}
+
+QWidget *PreferencesDialog::buildGeneralTab()
+{
+    auto *tab = new QWidget(this);
+    auto *layout = new QVBoxLayout(tab);
+
+    m_autoConnectCheck = new QCheckBox(
+        QStringLiteral("Connect automatically on start-up when the TC66 port is available"), tab);
+    m_autoConnectCheck->setChecked(m_settings.autoConnect);
+
+    layout->addWidget(m_autoConnectCheck);
+    layout->addStretch();
+
+    return tab;
 }
 
 QWidget *PreferencesDialog::buildMeasurementsTab()
@@ -159,9 +176,11 @@ QWidget *PreferencesDialog::buildColoursTab()
     return tab;
 }
 
-AppearanceSettings PreferencesDialog::settings() const
+AppSettings PreferencesDialog::settings() const
 {
-    AppearanceSettings result = m_settings;
+    AppSettings result = m_settings;
+
+    result.autoConnect = m_autoConnectCheck->isChecked();
 
     result.visibility.voltage = m_voltageCheck->isChecked();
     result.visibility.current = m_currentCheck->isChecked();
@@ -224,7 +243,9 @@ void PreferencesDialog::updateFontPreview()
 
 void PreferencesDialog::restoreDefaults()
 {
-    m_settings = AppearanceSettings::defaults();
+    m_settings = AppSettings::defaults();
+
+    m_autoConnectCheck->setChecked(m_settings.autoConnect);
 
     m_voltageCheck->setChecked(m_settings.visibility.voltage);
     m_currentCheck->setChecked(m_settings.visibility.current);

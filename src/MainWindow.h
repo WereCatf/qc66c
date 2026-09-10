@@ -9,6 +9,7 @@
 #include "Tc66Protocol.h"
 
 class QComboBox;
+class QCloseEvent;
 class QFormLayout;
 class QLabel;
 class QPushButton;
@@ -21,6 +22,9 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void refreshPorts();
@@ -62,5 +66,5 @@ private:
     QLabel *m_dplusValue = nullptr;
     QLabel *m_dminusValue = nullptr;
 
-    AppearanceSettings m_appearance;
+    AppSettings m_settings;
 };
