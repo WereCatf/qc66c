@@ -13,6 +13,9 @@ displays them stacked vertically.
   resistance, capacity/energy (two groups), temperature, and D+/D- line voltage.
 - Verifies the device response (AES-256-ECB decryption, `pac1/2/3` magic,
   CRC-16/MODBUS checksums) and re-synchronises on invalid frames.
+- Colour-codes the voltage, current, power and resistance readouts, with the
+  colours configurable from **Edit > Preferences...** and persisted between
+  runs.
 
 ## Protocol
 
@@ -74,6 +77,9 @@ C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe .\build\tc66-monitor.exe
 2. Start the application. The TC66 port is selected automatically if present.
 3. Pick a different port if needed and click **Connect**.
 4. Live values update several times per second. Click **Disconnect** to stop.
+5. Open **Edit > Preferences...** to choose the colours used for the voltage,
+   current, power and resistance values. Changes apply on **OK** and are saved
+   for the next run; **Restore Defaults** resets them.
 
 ## Project layout
 
@@ -84,6 +90,7 @@ src/
   MainWindow.*        Port selector and vertical readout
   Tc66Device.*        Polling, receive buffering, frame handling
   Tc66Protocol.*      AES-256-ECB decrypt, CRC-16/MODBUS, packet parsing
+  PreferencesDialog.* Colour preferences dialog (MeasurementColors)
   SerialPort.*        Win32 serial transport + COM port enumeration
 third_party/tiny-aes-c/  Public-domain AES implementation (Unlicense)
 ```

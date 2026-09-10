@@ -1,12 +1,17 @@
 #include "MainWindow.h"
 
+#include <QAction>
 #include <QComboBox>
 #include <QFont>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QKeySequence>
 #include <QLabel>
+#include <QMenu>
+#include <QMenuBar>
 #include <QPushButton>
+#include <QSettings>
 #include <QStatusBar>
 #include <QVBoxLayout>
 
@@ -46,11 +51,18 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(central);
     statusBar();
 
+    auto *editMenu = menuBar()->addMenu(QStringLiteral("&Edit"));
+    auto *preferencesAction = editMenu->addAction(QStringLiteral("&Preferences..."));
+    preferencesAction->setShortcut(QKeySequence::Preferences);
+    connect(preferencesAction, &QAction::triggered, this, &MainWindow::openPreferences);
+
     m_device = new Tc66Device(this);
     connect(m_device, &Tc66Device::readingReady, this, &MainWindow::onReadingReady);
     connect(m_device, &Tc66Device::connectionChanged, this, &MainWindow::onConnectionChanged);
     connect(m_device, &Tc66Device::errorOccurred, this, &MainWindow::onError);
 
+    loadColors();
+    applyColors();
     refreshPorts();
 }
 
@@ -212,4 +224,42 @@ void MainWindow::onReadingReady(const Tc66Reading &reading)
 void MainWindow::onError(const QString &message)
 {
     statusBar()->showMessage(message, 5000);
+}
+
+void MainWindow::loadColors()
+{
+    QSettings settings;
+    const MeasurementColors defaults = MeasurementColors::defaults();
+
+    m_colors.voltage = settings.value(QStringLiteral("colors/voltage"), defaults.voltage).value<QColor>();
+    m_colors.current = settings.value(QStringLiteral("colors/current"), defaults.current).value<QColor>();
+    m_colors.power = settings.value(QStringLiteral("colors/power"), defaults.power).value<QColor>();
+    m_colors.resistance = settings.value(QStringLiteral("colors/resistance"), defaults.resistance).value<QColor>();
+}
+
+void MainWindow::saveColors()
+{
+    QSettings settings;
+    settings.setValue(QStringLiteral("colors/voltage"), m_colors.voltage);
+    settings.setValue(QStringLiteral("colors/current"), m_colors.current);
+    settings.setValue(QStringLiteral("colors/power"), m_colors.power);
+    settings.setValue(QStringLiteral("colors/resistance"), m_colors.resistance);
+}
+
+void MainWindow::applyColors()
+{
+    m_voltageValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_colors.voltage.name()));
+    m_currentValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_colors.current.name()));
+    m_powerValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_colors.power.name()));
+    m_resistanceValue->setStyleSheet(QStringLiteral("color: %1;").arg(m_colors.resistance.name()));
+}
+
+void MainWindow::openPreferences()
+{
+    PreferencesDialog dialog(m_colors, this);
+    if (dialog.exec() == QDialog::Accepted) {
+        m_colors = dialog.colors();
+        applyColors();
+        saveColors();
+    }
 }

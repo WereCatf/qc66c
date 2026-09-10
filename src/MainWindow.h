@@ -2,6 +2,7 @@
 
 #include <QMainWindow>
 
+#include "PreferencesDialog.h"
 #include "Tc66Protocol.h"
 
 class QComboBox;
@@ -24,12 +25,17 @@ private slots:
     void onConnectionChanged(bool connected);
     void onReadingReady(const Tc66Reading &reading);
     void onError(const QString &message);
+    void openPreferences();
 
 private:
     QWidget *buildConnectionGroup();
     QWidget *buildDeviceGroup();
     QWidget *buildReadingsGroup();
     QLabel *addRow(QFormLayout *form, const QString &title);
+
+    void loadColors();
+    void saveColors();
+    void applyColors();
 
     Tc66Device *m_device = nullptr;
     QComboBox *m_portCombo = nullptr;
@@ -51,4 +57,6 @@ private:
     QLabel *m_temperatureValue = nullptr;
     QLabel *m_dplusValue = nullptr;
     QLabel *m_dminusValue = nullptr;
+
+    MeasurementColors m_colors;
 };
