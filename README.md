@@ -4,6 +4,8 @@ A small Qt 6 (Widgets) desktop application that reads live measurements from an
 RDTech TC66 / TC66C USB current & voltage meter over its USB CDC serial port and
 displays them stacked vertically.
 
+![Qc66c screenshot](resources/screenshot.png)
+
 Author: Nita Vesa
 
 ## Features
