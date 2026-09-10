@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2026 Nita Vesa
+
 #include "MainWindow.h"
 
 #include <QAction>
@@ -50,7 +53,7 @@ QLabel *makeMeasurementLabel()
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle(QStringLiteral("RDTech TC66 Monitor"));
+    setWindowTitle(QStringLiteral("Qc66c"));
 
     auto *central = new QWidget(this);
     auto *layout = new QVBoxLayout(central);

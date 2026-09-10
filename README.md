@@ -1,8 +1,10 @@
-# TC66 Monitor
+# Qc66c
 
 A small Qt 6 (Widgets) desktop application that reads live measurements from an
 RDTech TC66 / TC66C USB current & voltage meter over its USB CDC serial port and
 displays them stacked vertically.
+
+Author: Nita Vesa
 
 ## Features
 
@@ -64,13 +66,13 @@ The application needs the Qt runtime, so add Qt's `bin` directory to `PATH`
 
 ```powershell
 $env:Path = "C:\Qt\6.11.2\mingw_64\bin;$env:Path"
-.\build\tc66-monitor.exe
+.\build\Qc66c.exe
 ```
 
 To produce a self-contained folder:
 
 ```powershell
-C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe .\build\tc66-monitor.exe
+C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe .\build\Qc66c.exe
 ```
 
 ## Usage
@@ -86,16 +88,25 @@ C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe .\build\tc66-monitor.exe
    Changes apply on **OK** and are saved for the next run; **Restore Defaults**
    resets all of them.
 
+## License
+
+Released under the BSD 3-Clause License. See [LICENSE](LICENSE) for the full
+text. Copyright (c) 2026 Nita Vesa.
+
+The bundled AES implementation in `third_party/tiny-aes-c` is a separate
+third-party component released into the public domain under the Unlicense.
+
 ## Project layout
 
 ```
 CMakeLists.txt
+LICENSE
 src/
   main.cpp            Application entry point
   MainWindow.*        Port selector and vertical readout
   Tc66Device.*        Polling, receive buffering, frame handling
   Tc66Protocol.*      AES-256-ECB decrypt, CRC-16/MODBUS, packet parsing
-  PreferencesDialog.* Colour preferences dialog (MeasurementColors)
+  PreferencesDialog.* Appearance preferences dialog (visibility, font, colours)
   SerialPort.*        Win32 serial transport + COM port enumeration
 third_party/tiny-aes-c/  Public-domain AES implementation (Unlicense)
 ```

@@ -1,6 +1,10 @@
+# Qc66c - a Qt 6 GUI for the RDTech TC66/TC66C USB power meter
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2026 Nita Vesa
+
 cmake_minimum_required(VERSION 3.16)
 
-project(tc66-monitor VERSION 0.3.0 LANGUAGES C CXX)
+project(qc66c VERSION 0.4.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,7 +18,7 @@ add_library(tiny-aes-c STATIC
 )
 target_include_directories(tiny-aes-c PUBLIC third_party/tiny-aes-c)
 
-qt_add_executable(tc66-monitor
+qt_add_executable(qc66c
     src/main.cpp
     src/MainWindow.cpp
     src/MainWindow.h
@@ -28,13 +32,16 @@ qt_add_executable(tc66-monitor
     src/SerialPort.h
 )
 
-set_target_properties(tc66-monitor PROPERTIES
+set_target_properties(qc66c PROPERTIES
     WIN32_EXECUTABLE TRUE
+    OUTPUT_NAME "Qc66c"
 )
 
-target_include_directories(tc66-monitor PRIVATE src)
+target_compile_definitions(qc66c PRIVATE APP_VERSION="${PROJECT_VERSION}")
 
-target_link_libraries(tc66-monitor PRIVATE
+target_include_directories(qc66c PRIVATE src)
+
+target_link_libraries(qc66c PRIVATE
     Qt6::Widgets
     tiny-aes-c
     setupapi

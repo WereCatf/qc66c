@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2026 Nita Vesa
+
 #pragma once
 
 #include <QMainWindow>
