@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (without the leading "v"); defaults to the CMake project version'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  QT_VERSION: '6.10.3'
+
+jobs:
+  build:
+    name: Build and release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
+            $version = "${{ github.event.inputs.version }}".Trim()
+          } else {
+            $version = "${{ github.ref_name }}"
+          }
+          $version = $version -replace '^v', ''
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $cmake = Get-Content -Raw CMakeLists.txt
+            if ($cmake -match 'project\([^)]*VERSION\s+([0-9]+\.[0-9]+\.[0-9]+)[^)]*\)') {
+              $version = $Matches[1]
+            }
+          }
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            Write-Error 'Unable to determine a version to build.'
+            exit 1
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Resolved version: $version"
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: win64_mingw
+          tools: 'tools_mingw1310'
+          cache: true
+
+      - name: Ensure Ninja
+        shell: pwsh
+        run: |
+          if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
+            choco install ninja -y --no-progress
+          }
+
+      - name: Configure
+        shell: pwsh
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER=gcc
+          -DCMAKE_CXX_COMPILER=g++
+          -DAPP_VERSION=${{ steps.version.outputs.version }}
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build build
+
+      - name: Stage portable files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist\Qc66c | Out-Null
+          Copy-Item build\Qc66c.exe dist\Qc66c\
+          windeployqt --release --no-translations --compiler-runtime --dir dist\Qc66c dist\Qc66c\Qc66c.exe
+          Copy-Item LICENSE, README.md dist\Qc66c\
+
+          # Ensure the MinGW runtime is bundled even if windeployqt skipped it.
+          $gxx = Get-Command g++.exe -ErrorAction SilentlyContinue
+          if ($gxx) {
+            $mingwBin = Split-Path $gxx.Source
+            foreach ($dll in 'libgcc_s_seh-1.dll', 'libstdc++-6.dll', 'libwinpthread-1.dll') {
+              $target = Join-Path 'dist\Qc66c' $dll
+              $source = Join-Path $mingwBin $dll
+              if (-not (Test-Path $target) -and (Test-Path $source)) {
+                Copy-Item $source $target
+              }
+            }
+          }
+
+          Get-ChildItem -Recurse dist\Qc66c | Select-Object FullName
+
+      - name: Create portable zip
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          Compress-Archive -Path dist\Qc66c -DestinationPath "dist\Qc66c-$version-win64-portable.zip"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc "/DMyAppVersion=${{ steps.version.outputs.version }}" "packaging\qc66c.iss"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Qc66c ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            dist/Qc66c-*-win64-portable.zip
+            dist/Qc66c-*-win64-setup.exe
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qc66c-${{ steps.version.outputs.version }}
+          path: |
+            dist/Qc66c-*-win64-portable.zip
+            dist/Qc66c-*-win64-setup.exe

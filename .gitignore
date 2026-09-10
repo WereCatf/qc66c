@@ -1,5 +1,6 @@
 build/
 build-*/
+dist/
 *.user
 CMakeCache.txt
 CMakeFiles/

@@ -37,7 +37,11 @@ set_target_properties(qc66c PROPERTIES
     OUTPUT_NAME "Qc66c"
 )
 
-target_compile_definitions(qc66c PRIVATE APP_VERSION="${PROJECT_VERSION}")
+if(NOT APP_VERSION)
+    set(APP_VERSION "${PROJECT_VERSION}")
+endif()
+
+target_compile_definitions(qc66c PRIVATE APP_VERSION="${APP_VERSION}")
 
 target_include_directories(qc66c PRIVATE src)
 

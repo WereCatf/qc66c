@@ -91,6 +91,18 @@ C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe .\build\Qc66c.exe
    Changes apply on **OK** and are saved for the next run; **Restore Defaults**
    resets all of them.
 
+## Releases
+
+Pushing a semantic-version tag (for example `v0.6.0`) runs the `Release` GitHub
+Actions workflow, which builds and publishes:
+
+- `Qc66c-<version>-win64-portable.zip` - a self-contained folder with the
+  executable, all Qt dependencies and the MinGW runtime.
+- `Qc66c-<version>-win64-setup.exe` - a per-machine Windows installer.
+
+The workflow can also be started manually from the Actions tab; leave the
+version input blank to use the CMake project version.
+
 ## License
 
 Released under the BSD 3-Clause License. See [LICENSE](LICENSE) for the full
