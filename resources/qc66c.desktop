@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Qc66c
+GenericName=USB Power Meter
+Comment=Read measurements from an RDTech TC66/TC66C USB power meter
+Exec=Qc66c
+Icon=qc66c
+Terminal=false
+Categories=Utility;Engineering;

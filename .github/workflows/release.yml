@@ -18,36 +18,42 @@ env:
   QT_VERSION: '6.10.3'
 
 jobs:
-  build:
-    name: Build and release
-    runs-on: windows-latest
-
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Resolve version
-        id: version
-        shell: pwsh
+        id: resolve
+        shell: bash
         run: |
-          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
-            $version = "${{ github.event.inputs.version }}".Trim()
-          } else {
-            $version = "${{ github.ref_name }}"
-          }
-          $version = $version -replace '^v', ''
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            $cmake = Get-Content -Raw CMakeLists.txt
-            if ($cmake -match 'project\([^)]*VERSION\s+([0-9]+\.[0-9]+\.[0-9]+)[^)]*\)') {
-              $version = $Matches[1]
-            }
-          }
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            Write-Error 'Unable to determine a version to build.'
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+          else
+            version="${{ github.ref_name }}"
+          fi
+          version="${version#v}"
+          if [ -z "$version" ]; then
+            version="$(grep -oE 'project\(qc66c VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+          fi
+          if [ -z "$version" ]; then
+            echo "Unable to determine a version to build." >&2
             exit 1
-          }
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Host "Resolved version: $version"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $version"
+
+  windows:
+    name: Windows build
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -69,9 +75,10 @@ jobs:
         run: >
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
           -DCMAKE_C_COMPILER=gcc
           -DCMAKE_CXX_COMPILER=g++
-          -DAPP_VERSION=${{ steps.version.outputs.version }}
+          -DAPP_VERSION=${{ needs.version.outputs.version }}
 
       - name: Build
         shell: pwsh
@@ -103,7 +110,7 @@ jobs:
       - name: Create portable zip
         shell: pwsh
         run: |
-          $version = '${{ steps.version.outputs.version }}'
+          $version = '${{ needs.version.outputs.version }}'
           Compress-Archive -Path dist\Qc66c -DestinationPath "dist\Qc66c-$version-win64-portable.zip"
 
       - name: Install Inno Setup
@@ -114,23 +121,84 @@ jobs:
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          & $iscc "/DMyAppVersion=${{ steps.version.outputs.version }}" "packaging\qc66c.iss"
-
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          target_commitish: ${{ github.sha }}
-          name: Qc66c ${{ steps.version.outputs.version }}
-          generate_release_notes: true
-          files: |
-            dist/Qc66c-*-win64-portable.zip
-            dist/Qc66c-*-win64-setup.exe
+          & $iscc "/DMyAppVersion=${{ needs.version.outputs.version }}" "packaging\qc66c.iss"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Qc66c-${{ steps.version.outputs.version }}
+          name: Qc66c-${{ needs.version.outputs.version }}-windows
           path: |
             dist/Qc66c-*-win64-portable.zip
             dist/Qc66c-*-win64-setup.exe
+
+  linux:
+    name: Linux build
+    needs: version
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: linux_gcc_64
+          cache: true
+
+      - name: Install patchelf
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install -y patchelf
+
+      - name: Configure
+        shell: bash
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+          -DCMAKE_INSTALL_PREFIX=/usr
+          -DAPP_VERSION=${{ needs.version.outputs.version }}
+
+      - name: Build
+        shell: bash
+        run: cmake --build build
+
+      - name: Create portable tarball
+        shell: bash
+        run: |
+          version="${{ needs.version.outputs.version }}"
+          cmake --install build --prefix "$PWD/dist/Qc66c-$version"
+          cp LICENSE README.md "dist/Qc66c-$version/"
+          tar -czf "dist/Qc66c-$version-linux-x86_64.tar.gz" -C dist "Qc66c-$version"
+
+      - name: Create .deb
+        shell: bash
+        run: cpack --config build/CPackConfig.cmake -B "$PWD/dist" -G DEB
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qc66c-${{ needs.version.outputs.version }}-linux
+          path: |
+            dist/Qc66c-*-linux-x86_64.tar.gz
+            dist/*.deb
+
+  release:
+    name: Publish release
+    needs: [version, windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Qc66c ${{ needs.version.outputs.version }}
+          generate_release_notes: true
+          files: dist/*

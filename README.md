@@ -10,8 +10,8 @@ Author: Nita Vesa
 
 ## Features
 
-- Enumerates Windows serial ports and pre-selects the one reported as
-  `USB\VID_28E9&PID_018A` (the TC66). It never opens a port automatically.
+- Enumerates serial ports on Windows and Linux and pre-selects the one whose
+  USB IDs are `28E9:018A` (the TC66). It never opens a port automatically.
 - Lets the user pick any other port and connect/disconnect with a button.
 - Polls the meter (`getva`, 100 ms) and displays voltage, current, power,
   resistance, capacity/energy (two groups), temperature, and D+/D- line voltage.
@@ -38,16 +38,22 @@ checked.
 
 ## Requirements
 
-- Qt 6 (Widgets module only)
+- Qt 6.10.3 or newer (Widgets module only)
 - CMake 3.16+
-- A C++17 compiler (MinGW or MSVC)
+- A C++17 compiler (MinGW, MSVC or GCC/Clang)
 
 > Note: this project deliberately does **not** depend on the Qt Serial Port
-> module. The serial transport and COM-port enumeration are implemented directly
-> against the Windows API (`CreateFile`/`ReadFile`/`WriteFile` and SetupAPI), so
-> no extra Qt component needs to be installed.
+> module. The serial transport uses the Windows API
+> (`CreateFile`/`ReadFile`/`WriteFile` and SetupAPI) on Windows and POSIX
+> termios plus sysfs on Linux, so no extra Qt component is needed. On Linux the
+> user must be able to access the device, usually by being in the `dialout`
+> group.
 
 ## Build
+
+The project targets Qt 6.10.3, the version the release workflow uses.
+
+### Windows (MinGW)
 
 With Qt's bundled MinGW kit (paths shown are for a default Qt install, adjust to
 your own):
@@ -55,28 +61,49 @@ your own):
 ```powershell
 $env:Path = "C:\Qt\Tools\mingw1310_64\bin;C:\Qt\Tools\Ninja;C:\Qt\Tools\CMake_64\bin;$env:Path"
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
-    -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/mingw_64 `
+    -DCMAKE_PREFIX_PATH=C:/Qt/6.10.3/mingw_64 `
     -DCMAKE_C_COMPILER=C:/Qt/Tools/mingw1310_64/bin/gcc.exe `
     -DCMAKE_CXX_COMPILER=C:/Qt/Tools/mingw1310_64/bin/g++.exe
 cmake --build build
+```
+
+### Linux
+
+Install the Qt 6 development packages (or use the Qt online installer), then:
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+cmake --install build --prefix "$PWD/dist/portable"   # bundles the Qt runtime
 ```
 
 Or simply open `CMakeLists.txt` in Qt Creator and build with any Qt 6 kit.
 
 ## Run
 
+### Windows
+
 The application needs the Qt runtime, so add Qt's `bin` directory to `PATH`
 (or deploy the DLLs next to the executable):
 
 ```powershell
-$env:Path = "C:\Qt\6.11.2\mingw_64\bin;$env:Path"
+$env:Path = "C:\Qt\6.10.3\mingw_64\bin;$env:Path"
 .\build\Qc66c.exe
 ```
 
 To produce a self-contained folder:
 
 ```powershell
-C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe .\build\Qc66c.exe
+C:\Qt\6.10.3\mingw_64\bin\windeployqt.exe .\build\Qc66c.exe
+```
+
+### Linux
+
+Run the binary directly; the Qt runtime is located via the build RPATH (or, for
+an installed/bundled copy, from the bundled libraries):
+
+```sh
+./build/Qc66c
 ```
 
 ## Usage
@@ -101,6 +128,10 @@ Actions workflow, which builds and publishes:
 - `Qc66c-<version>-win64-portable.zip` - a self-contained folder with the
   executable, all Qt dependencies and the MinGW runtime.
 - `Qc66c-<version>-win64-setup.exe` - a per-machine Windows installer.
+- `Qc66c-<version>-linux-x86_64.tar.gz` - a self-contained folder with the
+  executable and the bundled Qt runtime.
+- `Qc66c-<version>-Linux.deb` - a Debian/Ubuntu package with the bundled Qt
+  runtime.
 
 The workflow can also be started manually from the Actions tab; leave the
 version input blank to use the CMake project version.
@@ -124,6 +155,9 @@ src/
   Tc66Device.*        Polling, receive buffering, frame handling
   Tc66Protocol.*      AES-256-ECB decrypt, CRC-16/MODBUS, packet parsing
   PreferencesDialog.* Appearance preferences dialog (visibility, font, colours)
-  SerialPort.*        Win32 serial transport + COM port enumeration
+  SerialPort.*        Platform-neutral serial interface + TC66 lookup
+  SerialPortWin.*     Win32 serial transport + COM port enumeration
+  SerialPortPosix.*   POSIX termios transport + sysfs enumeration
+resources/            Icons, screenshot, desktop entry and Qt/Windows resources
 third_party/tiny-aes-c/  Public-domain AES implementation (Unlicense)
 ```
