@@ -33,14 +33,15 @@ private:
     QWidget *buildReadingsGroup();
     QLabel *addRow(QFormLayout *form, const QString &title);
 
-    void loadColors();
-    void saveColors();
-    void applyColors();
+    void loadSettings();
+    void saveSettings();
+    void applyAppearance();
 
     Tc66Device *m_device = nullptr;
     QComboBox *m_portCombo = nullptr;
     QPushButton *m_refreshButton = nullptr;
     QPushButton *m_connectButton = nullptr;
+    QFormLayout *m_readingsForm = nullptr;
 
     QLabel *m_modelValue = nullptr;
     QLabel *m_firmwareValue = nullptr;
@@ -58,5 +59,5 @@ private:
     QLabel *m_dplusValue = nullptr;
     QLabel *m_dminusValue = nullptr;
 
-    MeasurementColors m_colors;
+    AppearanceSettings m_appearance;
 };

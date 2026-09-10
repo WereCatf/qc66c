@@ -2,8 +2,13 @@
 
 #include <QColor>
 #include <QDialog>
+#include <QFont>
 
+class QCheckBox;
+class QFontComboBox;
+class QLabel;
 class QPushButton;
+class QSpinBox;
 
 struct MeasurementColors
 {
@@ -15,22 +20,71 @@ struct MeasurementColors
     static MeasurementColors defaults();
 };
 
+struct MeasurementVisibility
+{
+    bool voltage = true;
+    bool current = true;
+    bool power = true;
+    bool resistance = true;
+    bool capacity0 = true;
+    bool energy0 = true;
+    bool capacity1 = true;
+    bool energy1 = true;
+    bool temperature = true;
+    bool dPlus = true;
+    bool dMinus = true;
+
+    static MeasurementVisibility defaults();
+};
+
+struct AppearanceSettings
+{
+    MeasurementColors colors;
+    MeasurementVisibility visibility;
+    QFont font;
+
+    static AppearanceSettings defaults();
+};
+
 class PreferencesDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit PreferencesDialog(const MeasurementColors &colors, QWidget *parent = nullptr);
+    explicit PreferencesDialog(const AppearanceSettings &settings, QWidget *parent = nullptr);
 
-    MeasurementColors colors() const;
+    AppearanceSettings settings() const;
 
 private:
+    QWidget *buildMeasurementsTab();
+    QWidget *buildFontTab();
+    QWidget *buildColoursTab();
+
     QPushButton *createColorButton(const QString &title, QColor &color);
     void updateSwatch(QPushButton *button, const QColor &color);
     void chooseColor(const QString &title, QColor &color, QPushButton *button);
+    void updateFontPreview();
     void restoreDefaults();
 
-    MeasurementColors m_colors;
+    AppearanceSettings m_settings;
+
+    QCheckBox *m_voltageCheck = nullptr;
+    QCheckBox *m_currentCheck = nullptr;
+    QCheckBox *m_powerCheck = nullptr;
+    QCheckBox *m_resistanceCheck = nullptr;
+    QCheckBox *m_capacity0Check = nullptr;
+    QCheckBox *m_energy0Check = nullptr;
+    QCheckBox *m_capacity1Check = nullptr;
+    QCheckBox *m_energy1Check = nullptr;
+    QCheckBox *m_temperatureCheck = nullptr;
+    QCheckBox *m_dplusCheck = nullptr;
+    QCheckBox *m_dminusCheck = nullptr;
+
+    QFontComboBox *m_fontCombo = nullptr;
+    QSpinBox *m_fontSize = nullptr;
+    QCheckBox *m_fontBold = nullptr;
+    QLabel *m_fontPreview = nullptr;
+
     QPushButton *m_voltageButton = nullptr;
     QPushButton *m_currentButton = nullptr;
     QPushButton *m_powerButton = nullptr;

@@ -16,6 +16,8 @@ displays them stacked vertically.
 - Colour-codes the voltage, current, power and resistance readouts, with the
   colours configurable from **Edit > Preferences...** and persisted between
   runs.
+- Lets each measurement be shown or hidden, and the measurement font (family,
+  size and bold) chosen, from the same Preferences dialog.
 
 ## Protocol
 
@@ -77,9 +79,12 @@ C:\Qt\6.11.2\mingw_64\bin\windeployqt.exe .\build\tc66-monitor.exe
 2. Start the application. The TC66 port is selected automatically if present.
 3. Pick a different port if needed and click **Connect**.
 4. Live values update several times per second. Click **Disconnect** to stop.
-5. Open **Edit > Preferences...** to choose the colours used for the voltage,
-   current, power and resistance values. Changes apply on **OK** and are saved
-   for the next run; **Restore Defaults** resets them.
+5. Open **Edit > Preferences...** to configure:
+   - **Measurements** — tick the values to display.
+   - **Font** — family, size and bold for the measurement values.
+   - **Colours** — colours for the voltage, current, power and resistance values.
+   Changes apply on **OK** and are saved for the next run; **Restore Defaults**
+   resets all of them.
 
 ## Project layout
 
